@@ -1,19 +1,18 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
-	"os"
 	"github.com/b0m0x/gitlab-issue-exporter/csv"
 	"github.com/b0m0x/gitlab-issue-exporter/gitlab"
-	"flag"
+	"os"
 )
-
-
 
 func main() {
 	var project = flag.String("project", "", "the complete project name, including the namespace. e.g: example/example")
 	var privateToken = flag.String("token", "", "a gitlab private token with read access to the issues of the requested project")
-	var gitlabHost	 = flag.String("host", "", "the host name or ip of the gitlab installation, e.g. git.your-org.com")
+	var gitlabHost = flag.String("host", "", "the host name or ip of the gitlab installation, e.g. git.your-org.com")
 	flag.Parse()
 
 	issueReader, err := gitlab.NewGitlabIssueReader(*privateToken, *gitlabHost, *project)
@@ -33,7 +32,9 @@ func main() {
 			fmt.Printf("GitLab Issue Reader error: %s\n", err.Error())
 			return
 		}
-		fmt.Printf("Exporting issue %d: %s\n", issue.Id, issue.Title)
+		logjson, _ := json.Marshal(issue)
+		fmt.Println("-------")
+		fmt.Printf("Exporting issue %s\n", string(logjson))
 		csvWriter.Write(issue)
 	}
 	fmt.Println("done")

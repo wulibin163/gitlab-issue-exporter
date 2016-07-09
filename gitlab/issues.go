@@ -17,15 +17,17 @@ type GitlabUser struct {
 	Email    string
 }
 type GitlabMilestone struct {
+	Title   string
 	DueDate string `json:"due_date"`
 }
 type GitlabIssue struct {
 	Id          int
 	Title       string
 	Description string
-	Author      GitlabUser
-	Assignee    GitlabUser
+	Labels      []string
 	Milestone   GitlabMilestone
+	Assignee    GitlabUser
+	Author      GitlabUser
 	CreatedAt   time.Time `json:"created_at"`
 }
 type GitlabComment struct {
@@ -97,13 +99,14 @@ func (r *GitlabIssueReader) formatIssueDescription(issue *GitlabIssue, comments 
 
 func (r *GitlabIssueReader) fetchNextIssuesPage() error {
 	resp, err := gitlabRequest(r.privateToken, r.gitlabHost,
-		fmt.Sprintf("/projects/%d/issues?state=opened&page=%d", r.projectId, r.nextPage))
+		fmt.Sprintf("/projects/%d/issues?state=closed&page=%d", r.projectId, r.nextPage))
 	if err != nil {
 		return err
 	}
 	if resp.StatusCode != 200 {
 		return errors.New(fmt.Sprintf("could not fetch issue page %d: %s", r.nextPage, resp.Status))
 	}
+
 	err = json.NewDecoder(resp.Body).Decode(&r.issueBuffer)
 	if err != nil {
 		return err
@@ -127,6 +130,7 @@ func (r *GitlabIssueReader) Next() (*GitlabIssue, error) {
 		r.current = 0
 		err := r.fetchNextIssuesPage()
 		if err != nil {
+			fmt.Println(err)
 			return nil, err
 		}
 		r.nextPage = r.nextPage + 1
